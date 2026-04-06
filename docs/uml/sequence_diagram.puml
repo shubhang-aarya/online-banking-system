@@ -1,0 +1,89 @@
+@startuml sequence_diagram
+title Online Banking System - Sequence Diagram\n(Deposit Request and Admin Approval Flow)
+
+skinparam sequenceArrowThickness 2
+skinparam roundcorner 10
+skinparam sequenceParticipant underline
+skinparam sequence {
+    ParticipantBackgroundColor LightBlue
+    ParticipantBorderColor DarkBlue
+    ActorBackgroundColor LightYellow
+    ActorBorderColor DarkGoldenRod
+    LifeLineBorderColor Gray
+    ArrowColor DarkSlateGray
+}
+
+actor Customer
+participant "Flask API\n(auth.py)" as AuthAPI
+participant "Flask API\n(user_routes.py)" as UserAPI
+participant "Flask API\n(admin_routes.py)" as AdminAPI
+database "Database\n(SQLite/PostgreSQL)" as DB
+actor Admin
+
+== Authentication ==
+
+Customer -> AuthAPI : POST /api/login\n{username, password}
+AuthAPI -> DB : Query User by username
+DB --> AuthAPI : User record
+AuthAPI -> AuthAPI : check_password(hash)
+alt Valid Credentials
+    AuthAPI --> Customer : 200 OK\n{user_id, username, role}
+else Invalid Credentials
+    AuthAPI --> Customer : 401 Unauthorized\n{error: "Invalid credentials"}
+end
+
+== Request Deposit ==
+
+Customer -> UserAPI : GET /api/user/accounts
+UserAPI -> DB : Query BankAccount\nWHERE user_id = current_user.id
+DB --> UserAPI : List of accounts
+UserAPI --> Customer : 200 OK\n{accounts: [...]}
+
+Customer -> UserAPI : POST /api/user/transaction/deposit\n{account_id, amount, description}
+UserAPI -> DB : Validate BankAccount ownership
+DB --> UserAPI : Account record
+UserAPI -> DB : INSERT Transaction\n(status='pending')
+DB --> UserAPI : Transaction created
+UserAPI --> Customer : 201 Created\n{transaction_id, status='pending'}
+
+== Admin Approves Transaction ==
+
+Admin -> AuthAPI : POST /api/login\n{username, password (admin)}
+AuthAPI -> DB : Query User by username
+DB --> AuthAPI : Admin user record
+AuthAPI --> Admin : 200 OK\n{role='admin'}
+
+Admin -> AdminAPI : GET /api/admin/transactions/pending
+AdminAPI -> DB : Query Transactions\nWHERE status='pending'
+DB --> AdminAPI : List of pending transactions
+AdminAPI --> Admin : 200 OK\n{transactions: [...]}
+
+Admin -> AdminAPI : POST /api/admin/transaction/{id}/approve
+AdminAPI -> DB : Query Transaction by id
+DB --> AdminAPI : Transaction record
+AdminAPI -> DB : Query BankAccount
+DB --> AdminAPI : Account record
+
+alt Deposit Transaction
+    AdminAPI -> DB : UPDATE BankAccount\nbalance += amount
+else Withdrawal Transaction
+    AdminAPI -> AdminAPI : Check balance >= amount
+    alt Sufficient Balance
+        AdminAPI -> DB : UPDATE BankAccount\nbalance -= amount
+    else Insufficient Balance
+        AdminAPI --> Admin : 400 Bad Request\n{error: "Insufficient funds"}
+    end
+end
+
+AdminAPI -> DB : UPDATE Transaction\nstatus='approved'\nprocessed_at=NOW()\nprocessed_by=admin.id
+DB --> AdminAPI : Updated transaction
+AdminAPI --> Admin : 200 OK\n{status='approved', processed_at}
+
+== Customer Checks Transaction Status ==
+
+Customer -> UserAPI : GET /api/user/transactions?account_id={id}
+UserAPI -> DB : Query Transactions\nWHERE user_id = current_user.id
+DB --> UserAPI : List of transactions
+UserAPI --> Customer : 200 OK\n{transactions: [{status='approved', ...}]}
+
+@enduml

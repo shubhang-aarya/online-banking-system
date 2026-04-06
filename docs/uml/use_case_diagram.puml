@@ -1,0 +1,88 @@
+@startuml use_case_diagram
+title Online Banking System - Use Case Diagram
+
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+skinparam usecase {
+    BackgroundColor LightBlue
+    BorderColor DarkBlue
+    ArrowColor DarkBlue
+}
+
+actor Customer as C
+actor Admin as A
+
+rectangle "Online Banking System" {
+    ' Authentication Use Cases (shared)
+    usecase "Register" as UC_Register
+    usecase "Login" as UC_Login
+    usecase "Logout" as UC_Logout
+
+    ' Customer Use Cases
+    usecase "View Profile" as UC_ViewProfile
+    usecase "Update Profile" as UC_UpdateProfile
+    usecase "Create Bank Account" as UC_CreateAccount
+    usecase "View Accounts" as UC_ViewAccounts
+    usecase "Request Deposit" as UC_ReqDeposit
+    usecase "Request Withdrawal" as UC_ReqWithdraw
+    usecase "View Transactions" as UC_ViewTxn
+    usecase "Request Loan" as UC_ReqLoan
+    usecase "View Loan Status" as UC_ViewLoan
+    usecase "Close Account" as UC_CloseAccount
+
+    ' Admin Use Cases
+    usecase "View All Users" as UC_ViewUsers
+    usecase "View User Details" as UC_UserDetails
+    usecase "View Pending Transactions" as UC_PendingTxn
+    usecase "Approve Transaction" as UC_ApproveTxn
+    usecase "Reject Transaction" as UC_RejectTxn
+    usecase "View Pending Loans" as UC_PendingLoans
+    usecase "Approve Loan" as UC_ApproveLoan
+    usecase "Reject Loan" as UC_RejectLoan
+    usecase "View Dashboard Statistics" as UC_Dashboard
+
+    ' Included Use Cases
+    usecase "Validate Credentials" as UC_ValidateCred
+    usecase "Validate Account Balance" as UC_ValidateBal
+    usecase "Update Account Balance" as UC_UpdateBal
+}
+
+' Customer Associations
+C --> UC_Register
+C --> UC_Login
+C --> UC_Logout
+C --> UC_ViewProfile
+C --> UC_UpdateProfile
+C --> UC_CreateAccount
+C --> UC_ViewAccounts
+C --> UC_ReqDeposit
+C --> UC_ReqWithdraw
+C --> UC_ViewTxn
+C --> UC_ReqLoan
+C --> UC_ViewLoan
+C --> UC_CloseAccount
+
+' Admin Associations
+A --> UC_Login
+A --> UC_Logout
+A --> UC_ViewUsers
+A --> UC_UserDetails
+A --> UC_PendingTxn
+A --> UC_ApproveTxn
+A --> UC_RejectTxn
+A --> UC_PendingLoans
+A --> UC_ApproveLoan
+A --> UC_RejectLoan
+A --> UC_Dashboard
+
+' <<include>> Relationships (mandatory behaviour)
+UC_Login ..> UC_ValidateCred : <<include>>
+UC_ReqWithdraw ..> UC_ValidateBal : <<include>>
+UC_ApproveTxn ..> UC_UpdateBal : <<include>>
+
+' <<extend>> Relationships (optional behaviour)
+UC_RejectTxn ..> UC_ApproveTxn : <<extend>>
+UC_RejectLoan ..> UC_ApproveLoan : <<extend>>
+
+@enduml

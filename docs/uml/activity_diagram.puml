@@ -1,0 +1,88 @@
+@startuml activity_diagram
+title Online Banking System - Activity Diagram\n(Transaction Request and Approval Flow)
+
+skinparam activity {
+    BackgroundColor LightGreen
+    BorderColor DarkGreen
+    ArrowColor DarkSlateGray
+    StartColor DarkGreen
+    EndColor DarkRed
+}
+skinparam activityDiamond {
+    BackgroundColor LightYellow
+    BorderColor DarkGoldenRod
+}
+
+|Customer|
+start
+:Open Online Banking Application;
+:Enter Username & Password;
+
+|System|
+:Validate Credentials;
+
+|Customer|
+if (Valid Credentials?) then (Yes)
+    :View Dashboard;
+    :Select Bank Account;
+    :Choose Transaction Type\n(Deposit / Withdrawal);
+    :Enter Amount & Description;
+
+    |System|
+    if (Transaction Type == Withdrawal?) then (Yes)
+        :Check Account Balance;
+        if (Sufficient Balance?) then (No)
+            :Show "Insufficient Funds" Error;
+            |Customer|
+            stop
+        else (Yes)
+        endif
+    endif
+    :Create Transaction Record\n(status = pending);
+    :Return Confirmation to Customer;
+
+    |Customer|
+    :View Transaction Submitted Message;
+
+    |Admin|
+    :Login to Admin Panel;
+    :View Pending Transactions;
+    :Select a Pending Transaction;
+    :Review Transaction Details;
+
+    if (Approve Transaction?) then (Approve)
+        |System|
+        if (Transaction Type == Deposit?) then (Yes)
+            :Add Amount to Account Balance;
+        else (No - Withdrawal)
+            :Deduct Amount from Account Balance;
+        endif
+        :Update Transaction Status = Approved;
+        :Record Processed At & Processed By;
+        :Return Approval Response;
+
+        |Admin|
+        :View "Transaction Approved" Message;
+    else (Reject)
+        |System|
+        :Update Transaction Status = Rejected;
+        :Record Processed At & Processed By;
+        :Store Rejection Remarks;
+        :Return Rejection Response;
+
+        |Admin|
+        :View "Transaction Rejected" Message;
+    endif
+
+    |Customer|
+    :View Updated Transaction Status;
+else (No)
+    |System|
+    :Return "Invalid Credentials" Error;
+    |Customer|
+    :View Error Message;
+endif
+
+stop
+
+@enduml
