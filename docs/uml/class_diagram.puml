@@ -1,0 +1,95 @@
+@startuml class_diagram
+title Online Banking System - Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam classFontStyle Bold
+skinparam class {
+    BackgroundColor LightYellow
+    BorderColor DarkGoldenRod
+    ArrowColor DarkSlateGray
+}
+
+class User {
+    + id : Integer <<PK>>
+    + username : String(80) <<unique>>
+    + email : String(120) <<unique>>
+    - password_hash : String(255)
+    + first_name : String(80)
+    + last_name : String(80)
+    + address : Text
+    + pan_number : String(10) <<unique>>
+    + phone : String(15)
+    + role : String(20)
+    + is_active : Boolean
+    + created_at : DateTime
+    --
+    + set_password(password : String) : void
+    + check_password(password : String) : Boolean
+    + is_admin() : Boolean
+}
+
+class BankAccount {
+    + id : Integer <<PK>>
+    + account_number : String(20) <<unique>>
+    + account_type : String(20)
+    + balance : Float
+    + user_id : Integer <<FK>>
+    + is_active : Boolean
+    + opening_date : DateTime
+}
+
+class Transaction {
+    + id : Integer <<PK>>
+    + transaction_id : String(50) <<unique>>
+    + account_id : Integer <<FK>>
+    + user_id : Integer <<FK>>
+    + transaction_type : String(20)
+    + amount : Float
+    + status : String(20)
+    + description : Text
+    + requested_at : DateTime
+    + processed_at : DateTime
+    + processed_by : Integer <<FK>>
+}
+
+class LoanRequest {
+    + id : Integer <<PK>>
+    + loan_id : String(50) <<unique>>
+    + user_id : Integer <<FK>>
+    + amount : Float
+    + purpose : Text
+    + duration_months : Integer
+    + status : String(20)
+    + interest_rate : Float
+    + requested_at : DateTime
+    + processed_at : DateTime
+    + processed_by : Integer <<FK>>
+    + remarks : Text
+}
+
+' Enumerations / Notes
+note right of User
+  role: 'user' | 'admin'
+  is_active: account enabled/disabled
+end note
+
+note right of Transaction
+  transaction_type: 'deposit' | 'withdraw'
+  status: 'pending' | 'approved' | 'rejected'
+end note
+
+note right of LoanRequest
+  status: 'pending' | 'approved'
+         | 'rejected' | 'disbursed'
+  interest_rate default: 8.5%
+end note
+
+' Relationships
+User "1" --> "0..*" BankAccount : owns >
+User "1" --> "0..*" Transaction : requests >
+User "1" --> "0..*" LoanRequest : applies for >
+BankAccount "1" --> "0..*" Transaction : records >
+User "1" --> "0..*" Transaction : processes >\nprocessed_by
+User "1" --> "0..*" LoanRequest : processes >\nprocessed_by
+
+@enduml
